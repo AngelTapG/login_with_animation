@@ -9,15 +9,34 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // 👁️ Controla si la contraseña se oculta o se muestra
   bool _obscurePassword = true;
+
+  StateMachineController? controller;
+  SMIBool? isChecking;
+  SMIBool? isHandsUp;
+  SMITrigger? trigSuccess;
+  SMITrigger? trigFail;
+
+  void _onRiveInit(Artboard artboard) {
+    controller = StateMachineController.fromArtboard(
+      artboard,
+      "Login Machine",
+    );
+    if (controller == null) return;
+
+    artboard.addController(controller!);
+
+    isChecking = controller!.findInput<bool>("isChecking") as SMIBool?;
+    isHandsUp = controller!.findInput<bool>("isHandsUp") as SMIBool?;
+    trigSuccess = controller!.findInput<bool>("trigSuccess") as SMITrigger?;
+    trigFail = controller!.findInput<bool>("trigFail") as SMITrigger?;
+  }
 
   @override
   Widget build(BuildContext context) {
-    //Para obtener el tamaño del dispositivo
     final Size size = MediaQuery.of(context).size;
+
     return Scaffold(
-      //Evita notch o cámaras frontales
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -26,33 +45,58 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: size.width,
                 height: 200,
-                child:
-                    RiveAnimation.asset("assets/animated_login_character.riv"),
+                child: RiveAnimation.asset(
+                  "assets/animated_login_character.riv",
+                  stateMachines: ["Login Machine"],
+                  onInit: _onRiveInit,
+                ),
               ),
-              //Espacio entre el oso y el texto
 
               const SizedBox(height: 10),
-              //Campo de texto del email
+
+              // Campo email
               TextField(
-                //Para que aparezca @ en moviles
+                onChanged: (value) {
+                  // Activa "modo chismoso"
+                  isChecking?.value = true;
+                  // Baja manos si estaba tapándose
+                  isHandsUp?.value = false;
+                },
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: "Email",
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
-                    //Esquinas redondeadas
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
 
-              //Espacio entre los campos
               const SizedBox(height: 10),
 
+              SizedBox(
+                width: size.width,
+                child: const Text(
+                  "Forgot your password?",
+                  textAlign: TextAlign.right,
+                  style: TextStyle(decoration: TextDecoration.underline),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Campo contraseña
               TextField(
-                // Se alterna según el estado
                 obscureText: _obscurePassword,
                 keyboardType: TextInputType.visiblePassword,
+                onTap: () {
+                  // Se tapa los ojos al escribir contraseña
+                  isHandsUp?.value = true;
+                },
+                onEditingComplete: () {
+                  // Baja las manos al terminar
+                  isHandsUp?.value = false;
+                },
                 decoration: InputDecoration(
                   labelText: "Contraseña",
                   prefixIcon: const Icon(Icons.lock),
@@ -69,11 +113,54 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   border: OutlineInputBorder(
-                    //Esquinas redondeadas
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 10),
+
+              // Botón login
+              MaterialButton(
+                minWidth: size.width,
+                height: 50,
+                color: Colors.purple,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  "Login",
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () {
+                  final success = true; // Simulación
+                  if (success) {
+                    trigSuccess?.fire();
+                  } else {
+                    trigFail?.fire();
+                  }
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don’t you have an account? "),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      "Register",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              )
             ],
           ),
         ),
